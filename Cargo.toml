@@ -1,6 +1,7 @@
 [package]
-name = "task_tracker_cli"
+name = "task-cli"
 version = "0.1.0"
+authors = ["ninet33n <slipstreamvroom@gmail.com>"]
 edition = "2024"
 
 [dependencies]
