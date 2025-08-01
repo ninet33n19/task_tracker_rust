@@ -1,19 +1,18 @@
 #!/bin/bash
+set -e
 
-# Build the release binary
+# Variables
+BINARY_NAME="task-cli"
+INSTALL_DIR="/usr/local/bin"
+BIN_PATH="$INSTALL_DIR/$BINARY_NAME"
+
+# Option 1: Build locally via cargo
+echo "Building $BINARY_NAME..."
 cargo build --release
 
-# Path to the built binary
-BINARY_PATH="./target/release/task-cli"
+echo "Installing $BINARY_NAME to $INSTALL_DIR"
+sudo cp "target/release/$BINARY_NAME" "$BIN_PATH"
+sudo chmod +x "$BIN_PATH"
 
-# Check if the binary was built successfully
-if [ ! -f "$BINARY_PATH" ]; then
-    echo "Build failed: $BINARY_PATH not found."
-    exit 1
-fi
-
-# Optionally copy the binary to /usr/local/bin (requires sudo)
-echo "Copying $BINARY_PATH to /usr/local/bin/"
-sudo cp "$BINARY_PATH" /usr/local/bin/
-
-echo "Release binary installed to /usr/local/bin/"
+echo "$BINARY_NAME installed successfully at $BIN_PATH"
+echo "You can now run '$BINARY_NAME' from anywhere."

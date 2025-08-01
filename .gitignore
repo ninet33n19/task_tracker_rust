@@ -28,3 +28,6 @@ Thumbs.db
 
 # Ignore backup files
 *~
+
+tasks.json
+test.sh

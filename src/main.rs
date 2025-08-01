@@ -1,8 +1,8 @@
 use chrono::{DateTime, Utc};
+use directories::ProjectDirs;
 use serde::{Deserialize, Serialize};
 use serde_json;
-
-const TASKS_FILE: &str = "tasks.json";
+use std::path::PathBuf;
 
 #[derive(Debug, Serialize, Deserialize)]
 enum Status {
@@ -27,7 +27,8 @@ struct TaskManager {
 
 impl TaskManager {
     fn new() -> Self {
-        let tasks = read_from_json(TASKS_FILE);
+        let tasks_file_path = get_tasks_file_path();
+        let tasks = read_from_json(&tasks_file_path);
         let next_id = if let Some(last_task) = tasks.last() {
             last_task.id + 1
         } else {
@@ -53,7 +54,8 @@ impl TaskManager {
         self.tasks.push(task);
         self.next_id += 1;
 
-        write_to_json(&self.tasks, TASKS_FILE);
+        let tasks_file_path = get_tasks_file_path();
+        write_to_json(&self.tasks, &tasks_file_path);
     }
 
     fn update_description(&mut self, id: u32, new_description: String) {
@@ -64,6 +66,8 @@ impl TaskManager {
                 "Task with ID {} updated. New description: {}. Updated At: {}",
                 task.id, task.description, task.updated_at
             );
+            let tasks_file_path = get_tasks_file_path();
+            write_to_json(&self.tasks, &tasks_file_path);
         } else {
             println!("Task with ID {} not found.", id);
         }
@@ -77,6 +81,8 @@ impl TaskManager {
                 "Task with ID {} updated. Status: {:?}. Updated At: {}",
                 task.id, task.status, task.updated_at
             );
+            let tasks_file_path = get_tasks_file_path();
+            write_to_json(&self.tasks, &tasks_file_path);
         }
     }
 
@@ -88,13 +94,16 @@ impl TaskManager {
                 "Task with ID {} updated. Status: {:?}. Updated At: {}",
                 task.id, task.status, task.updated_at
             );
+            let tasks_file_path = get_tasks_file_path();
+            write_to_json(&self.tasks, &tasks_file_path);
         }
     }
 
     fn delete_task(&mut self, id: u32) {
         if let Some(pos) = self.tasks.iter().position(|task| task.id == id) {
             self.tasks.remove(pos);
-            write_to_json(&self.tasks, TASKS_FILE);
+            let tasks_file_path = get_tasks_file_path();
+            write_to_json(&self.tasks, &tasks_file_path);
         } else {
             println!("Task with ID {} not found.", id);
         }
@@ -156,7 +165,8 @@ impl TaskManager {
                 }
             }
         }
-        write_to_json(&self.tasks, TASKS_FILE);
+        let tasks_file_path = get_tasks_file_path();
+        write_to_json(&self.tasks, &tasks_file_path);
     }
 }
 // THIS FUNCTION WONT WORK BECAUSE WE CANNOT MUTATE A BORROWED VALUE
@@ -174,13 +184,24 @@ impl TaskManager {
 //     }
 // }
 
-fn write_to_json(task_list: &Vec<Task>, file_path: &str) {
+fn get_tasks_file_path() -> PathBuf {
+    if let Some(proj_dirs) = ProjectDirs::from("com", "TaskTracker", "task-cli") {
+        let data_dir = proj_dirs.data_dir();
+        std::fs::create_dir_all(data_dir).expect("Could not create data directory");
+        data_dir.join("tasks.json")
+    } else {
+        // fallback: current dir
+        PathBuf::from("tasks.json")
+    }
+}
+
+fn write_to_json(task_list: &Vec<Task>, file_path: &PathBuf) {
     let json_data = serde_json::to_string(task_list).unwrap();
-    println!("Writing tasks to {}: {}", file_path, json_data);
+    println!("Writing tasks to {}: {}", file_path.display(), json_data);
     std::fs::write(file_path, json_data).expect("Unable to write file");
 }
 
-fn read_from_json(file_path: &str) -> Vec<Task> {
+fn read_from_json(file_path: &PathBuf) -> Vec<Task> {
     match std::fs::read_to_string(file_path) {
         Ok(data) => serde_json::from_str(&data).unwrap_or_else(|_| Vec::new()),
         Err(_) => Vec::new(),
